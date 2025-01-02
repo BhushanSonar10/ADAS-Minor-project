@@ -1,0 +1,108 @@
+import time
+import random
+from threading import Thread
+import requests
+import math
+
+# Function to simulate driver behavior monitoring
+def monitor_driver_behavior():
+    """
+    Monitors driver behavior in real-time.
+    Alerts are raised for unsafe behaviors like hard acceleration, hard braking, or sharp turns.
+    """
+    thresholds = {"acceleration": 2.5, "braking": -2.5, "sharp_turn": 45}  # Thresholds
+    print("Monitoring driver behavior...")
+    while True:
+        acceleration = random.uniform(-3, 3)  # Simulated G-forces
+        steering_angle = random.uniform(-90, 90)  # Simulated steering angle
+        
+        if acceleration > thresholds["acceleration"]:
+            print("ALERT: Hard Acceleration Detected!")
+        if acceleration < thresholds["braking"]:
+            print("ALERT: Hard Braking Detected!")
+        if abs(steering_angle) > thresholds["sharp_turn"]:
+            print("ALERT: Sharp Turn Detected!")
+        
+        time.sleep(1)  # Simulating real-time data stream
+
+# Function to fetch live traffic data
+def fetch_live_traffic_data(api_url, start, end):
+    """
+    Fetches live traffic data between two points using an API.
+    """
+    try:
+        response = requests.get(f"{api_url}?start={start}&end={end}")
+        if response.status_code == 200:
+            traffic_data = response.json()
+            print("Traffic data retrieved successfully.")
+            return traffic_data
+        else:
+            print(f"Failed to retrieve traffic data. Status code: {response.status_code}")
+    except Exception as e:
+        print(f"Error fetching traffic data: {e}")
+        return None
+
+# Class for route optimization using Dijkstra's algorithm
+class Graph:
+    def __init__(self, vertices):
+        self.vertices = vertices
+        self.graph = [[0 for _ in range(vertices)] for _ in range(vertices)]
+
+    def add_edge(self, u, v, weight):
+        self.graph[u][v] = weight
+        self.graph[v][u] = weight
+
+    def find_shortest_path(self, src, dest):
+        """
+        Implements Dijkstra's Algorithm to find the shortest path in the graph.
+        """
+        dist = [float('inf')] * self.vertices
+        dist[src] = 0
+        spt_set = [False] * self.vertices
+
+        for _ in range(self.vertices):
+            # Find the vertex with the minimum distance
+            min_distance = float('inf')
+            for v in range(self.vertices):
+                if not spt_set[v] and dist[v] < min_distance:
+                    min_distance, u = dist[v], v
+
+            spt_set[u] = True
+
+            # Update the distance of the neighboring vertices
+            for v in range(self.vertices):
+                if (self.graph[u][v] > 0 and not spt_set[v] and
+                        dist[u] + self.graph[u][v] < dist[v]):
+                    dist[v] = dist[u] + self.graph[u][v]
+
+        return dist[dest]
+
+# Main program
+def main():
+    # Start monitoring driver behavior in a separate thread
+    behavior_monitor = Thread(target=monitor_driver_behavior)
+    behavior_monitor.start()
+
+    # Fetch and display live traffic data (Replace with actual API URL and coordinates)
+    api_url = "https://example-traffic-api.com/traffic"
+    start_location = "12.971598,77.594566"  # Example coordinates for start
+    end_location = "12.914142,74.855957"    # Example coordinates for end
+    traffic_data = fetch_live_traffic_data(api_url, start_location, end_location)
+    if traffic_data:
+        print("Traffic Data:", traffic_data)
+
+    # Route optimization using Dijkstra's algorithm
+    g = Graph(5)
+    g.add_edge(0, 1, 2)
+    g.add_edge(0, 2, 4)
+    g.add_edge(1, 2, 1)
+    g.add_edge(1, 3, 7)
+    g.add_edge(2, 3, 3)
+    g.add_edge(3, 4, 1)
+
+    src, dest = 0, 4  # Example nodes
+    shortest_path = g.find_shortest_path(src, dest)
+    print(f"Shortest Path from Node {src} to Node {dest}: {shortest_path}")
+
+if __name__ == "__main__":
+    main()
